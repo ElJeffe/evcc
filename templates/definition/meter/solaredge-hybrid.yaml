@@ -397,32 +397,19 @@ render: |
                 address: 0xE00D # StorageRemoteCtrl_CommandMode
                 type: writesingle
                 encoding: uint16
-          - source: go
-            in:
-              - name: rated
-                type: float
-                config:
-                  source: cached
-                  cache: 1h # rated max is static
-                  value:
-                    source: modbus
-                    {{- include "modbus" . | indent 18 }}
-                    register:
-                      address: 0xE144 # Battery 1 Max Charge Continues Power (RO)
-                      type: holding
-                      decode: float32nans
-            out:
-              - name: limit
-                type: float
-                config:
-                  source: modbus
-                  {{- include "modbus" . | indent 16 }}
-                  register:
-                    address: 0xE00E # StorageRemoteCtrl_ChargeLimit
-                    type: writemultiple
-                    encoding: float32s
-            script: |
-              rated // unblock charging (holdcharge may zero this); DC-coupled PV bypasses AC, uncapped by maxacpower
+          - source: const
+            {{- if .maxchargepower }}
+            value: {{ .maxchargepower }} # W
+            {{- else }}
+            value: 2000 # W
+            {{- end }}
+            set:
+              source: modbus
+              {{- include "modbus" . | indent 12 }}
+              register:
+                address: 0xE00E # StorageRemoteCtrl_ChargeLimit
+                type: writemultiple
+                encoding: float32s
           - source: const
             value: 0 # W
             set:
